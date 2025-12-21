@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  roleId    Int       @map("role_id")
+  role      Role      @relation(fields: [roleId], references: [id])
+  employee  Employee?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Department {
+  id           Int            @id @default(autoincrement())
+  name         String         @unique
+  employees    Employee[]
+  CardTemplate CardTemplate[]
+
+  @@map("departments")
+}
+
+model Position {
+  id           Int            @id @default(autoincrement())
+  name         String         @unique
+  employees    Employee[]
+  CardTemplate CardTemplate[]
+}
+
+model Employee {
+  id           Int                  @id @default(autoincrement())
+  firstName    String               @map("first_name")
+  lastName     String               @map("last_name")
+  birthDate    DateTime             @map("birth_date")
+  email        String               @unique // корпоративный email для рассылки
+  photoUrl     String?              @map("photo_url") // URL фото профиля (храним в S3 или локально)
+  departmentId Int?                 @map("department_is")
+  department   Department?          @relation(fields: [departmentId], references: [id])
+  positionId   Int?                 @map("position_id")
+  position     Position?            @relation(fields: [positionId], references: [id])
+  userId       Int?                 @unique @map("user_id")
+  user         User?                @relation(fields: [userId], references: [id])
+  preferences  BirthdayPreferences?
+
+  BirthdayCardHistory BirthdayCardHistory[]
+}
+
+model BirthdayPreferences {
+  id           Int      @id @default(autoincrement())
+  employeeId   Int      @unique @map("employee_id")
+  employee     Employee @relation(fields: [employeeId], references: [id])
+  receiveEmail Boolean  @default(true) @map("receive_email")
+
+  @@map("birthday_preferences")
+}
+
+model CardTemplate {
+  id                 Int         @id @default(autoincrement())
+  name               String
+  backgroundImageUrl String      @map("background_image_url")
+  textTemplate       String      @map("text_template")
+  fontSize           Int         @default(48) @map("font_size")
+  fontColor          String      @default("#FFFFFF") @map("font_color")
+  textX              Int         @default(100)
+  textY              Int         @default(200)
+  departmentId       Int?        @map("department_id")
+  positionId         Int?        @map("position_id")
+  department         Department? @relation(fields: [departmentId], references: [id])
+  position           Position?   @relation(fields: [positionId], references: [id])
+
+  BirthdayCardHistory BirthdayCardHistory[]
+}
+
+model BirthdayCardHistory {
+  id           Int          @id @default(autoincrement())
+  employeeId   Int          @map("employee_id")
+  employee     Employee     @relation(fields: [employeeId], references: [id])
+  templateId   Int          @map("template_id")
+  template     CardTemplate @relation(fields: [templateId], references: [id])
+  imageUrl     String       @map("image_url")
+  sentAt       DateTime     @map("sent_at")
+  success      Boolean
+  errorMessage String?      @map("error_message")
+}
+
+model NotificationLog {
+  id        Int      @id @default(autoincrement())
+  type      String
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+}
+
+model MailingSettings {
+  id            Int    @id @default(1)
+  sendTime      String @default("09:00") // HH:MM
+  smtpHost      String
+  smtpPort      Int
+  smtpUser      String
+  smtpPass      String
+  fromEmail     String
+  retryAttempts Int    @default(3)
+}
