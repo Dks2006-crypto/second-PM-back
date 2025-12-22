@@ -14,11 +14,10 @@ export class MailingService {
     private cardGenerator: CardGeneratorService,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_9AM)
+  @Cron('*/1 * * * *')
   async handleBirthdayMailing() {
-    this.logger.log('handleBirthdayMailing вызван!');
+    this.logger.log('handleBirthdayMailing вызван! (проверка времени)');
 
-    // ← ВЕРНУЛИ чтение настроек
     const settings = await this.prisma.mailingSettings.findUnique({
       where: { id: 1 },
     });
@@ -28,11 +27,19 @@ export class MailingService {
       return;
     }
 
+    const now = new Date();
+    const [targetHour, targetMinute] = settings.sendTime.split(':').map(Number);
+
+    // Проверяем, совпадает ли текущее время с настроенным
+    if (now.getHours() !== targetHour || now.getMinutes() !== targetMinute) {
+      return; // Не время — выходим
+    }
+
+    this.logger.log(`Время отправки наступило: ${settings.sendTime}`);
+
     const today = new Date();
     const todayMonth = today.getMonth();
     const todayDay = today.getDate();
-
-    this.logger.log(`Поиск сотрудников с ДР ${todayDay}.${todayMonth + 1}`);
 
     const allEmployees = await this.prisma.employee.findMany({
       where: {
@@ -41,7 +48,7 @@ export class MailingService {
       include: { department: true, position: true },
     });
 
-    const employees = allEmployees.filter((emp) => {
+    const employees = allEmployees.filter(emp => {
       const birth = new Date(emp.birthDate);
       return birth.getMonth() === todayMonth && birth.getDate() === todayDay;
     });
@@ -53,11 +60,10 @@ export class MailingService {
       return;
     }
 
-    // ← Используем настройки из БД (Mailtrap)
     const transporter = nodemailer.createTransport({
       host: settings.smtpHost,
       port: settings.smtpPort,
-      secure: false, // Для порта 2525
+      secure: false,
       auth: {
         user: settings.smtpUser,
         pass: settings.smtpPass,
@@ -70,13 +76,11 @@ export class MailingService {
 
     for (let i = 0; i < employees.length; i++) {
       const employee = employees[i];
-
       await this.sendBirthdayCard(employee, transporter, fromEmail);
 
-      // Задержка 2 секунды между письмами (кроме последнего)
       if (i < employees.length - 1) {
-        this.logger.log('Задержка 10 секунды для соблюдения лимита Mailtrap');
-        await new Promise((resolve) => setTimeout(resolve, 10000)); // 2000 мс = 2 сек
+        this.logger.log('Задержка 2 секунды для соблюдения лимита Mailtrap');
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
   }
