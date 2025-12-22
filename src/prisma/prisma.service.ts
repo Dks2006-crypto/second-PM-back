@@ -7,7 +7,7 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    super();
+    super({});
   }
 
   async onModuleInit() {
