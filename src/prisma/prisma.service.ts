@@ -12,6 +12,7 @@ export class PrismaService
   constructor(configService: ConfigService) {
     let url = configService.get<string>('DATABASE_URL');
 
+    // Fallback для production (Railway/Koyeb)
     if (!url) {
       url = 'file:/app/data/dev.db';
     }
