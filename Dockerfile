@@ -24,11 +24,9 @@ COPY --from=builder /app/prisma ./prisma
 # Создаём директорию для БД
 RUN mkdir -p /app/data
 
-# Устанавливаем DATABASE_URL
+# Применяем схему (для SQLite — db push вместо migrate)
 ENV DATABASE_URL=file:/app/data/dev.db
-
-# Применяем миграции (ENV уже установлен, флаг не нужен)
-RUN npx prisma migrate deploy --schema ./prisma/schema.prisma
+RUN npx prisma db push --schema ./prisma/schema.prisma
 
 EXPOSE 3000
 
