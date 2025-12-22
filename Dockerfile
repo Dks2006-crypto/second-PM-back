@@ -14,6 +14,7 @@ RUN npm run build
 # Stage 2: Production
 FROM node:20-alpine
 WORKDIR /app
+RUN mkdir -p /app/data && touch /app/data/dev.db
 
 # Копируем dist полностью (включая src)
 COPY --from=builder /app/dist ./dist
