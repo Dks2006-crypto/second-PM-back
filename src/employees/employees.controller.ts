@@ -11,6 +11,7 @@ import {
   ForbiddenException,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -194,8 +195,20 @@ export class EmployeesController {
 
   // Доступно всем авторизованным (для календаря и списка коллег)
   @Get('birthdays')
-  getBirthdays() {
-    return this.employeesService.getBirthdayList();
+  getBirthdays(
+    @Query('departmentId') departmentId?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('period') period?: 'today' | 'week' | 'month' | 'all'
+  ) {
+    const filters: any = {};
+    
+    if (departmentId) filters.departmentId = parseInt(departmentId);
+    if (dateFrom) filters.dateFrom = dateFrom;
+    if (dateTo) filters.dateTo = dateTo;
+    if (period) filters.period = period;
+    
+    return this.employeesService.getBirthdayList(filters);
   }
 
   @Get('birthday-history')

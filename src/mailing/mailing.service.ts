@@ -143,8 +143,7 @@ export class MailingService {
         true, // включаем фото сотрудника
       );
 
-      const publicUrl = `http://localhost:3000${imageUrl}`;
-
+      // imageUrl уже содержит полный URL, не нужно добавлять префикс
       this.logger.log(`Отправка письма на ${employee.email} от ${fromEmail} с шаблоном "${template.name}"`);
 
       await transporter.sendMail({
@@ -154,7 +153,7 @@ export class MailingService {
         html: `
           <p>Дорогой ${fullName}!</p>
           <p>Поздравляем с Днем рождения!</p>
-          <p><img src="${publicUrl}" alt="Поздравительная открытка" style="max-width: 100%; height: auto;" /></p>
+          <p><img src="${imageUrl}" alt="Поздравительная открытка" style="max-width: 100%; height: auto;" /></p>
         `,
       });
 

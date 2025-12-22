@@ -145,8 +145,21 @@ export class EmployeesService {
   }
 
   // Для календаря дней рождения (доступно всем авторизованным)
-  async getBirthdayList() {
-    return this.prisma.employee.findMany({
+  async getBirthdayList(filters?: {
+    departmentId?: number;
+    dateFrom?: string; // YYYY-MM-DD
+    dateTo?: string;   // YYYY-MM-DD
+    period?: 'today' | 'week' | 'month' | 'all';
+  }) {
+    const whereClause: any = {};
+    
+    // Фильтр по отделу
+    if (filters?.departmentId) {
+      whereClause.departmentId = filters.departmentId;
+    }
+
+    const employees = await this.prisma.employee.findMany({
+      where: whereClause,
       select: {
         id: true,
         firstName: true,
@@ -154,7 +167,62 @@ export class EmployeesService {
         birthDate: true,
         department: { select: { name: true } },
       },
-      orderBy: { birthDate: 'asc' },
+    });
+
+    // Фильтрация по датам
+    let filteredEmployees = employees;
+    
+    if (filters?.period || filters?.dateFrom || filters?.dateTo) {
+      const today = new Date();
+      
+      filteredEmployees = employees.filter(emp => {
+        const birthDate = new Date(emp.birthDate);
+        const thisYearBirth = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+        
+        // Период фильтрации
+        if (filters?.period) {
+          switch (filters.period) {
+            case 'today':
+              return thisYearBirth.toDateString() === today.toDateString();
+            
+            case 'week': {
+              const weekFrom = new Date(today);
+              weekFrom.setDate(today.getDate());
+              const weekTo = new Date(today);
+              weekTo.setDate(today.getDate() + 7);
+              return thisYearBirth >= weekFrom && thisYearBirth <= weekTo;
+            }
+            
+            case 'month': {
+              const monthFrom = new Date(today.getFullYear(), today.getMonth(), 1);
+              const monthTo = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+              return thisYearBirth >= monthFrom && thisYearBirth <= monthTo;
+            }
+          }
+        }
+        
+        // Конкретные даты
+        if (filters?.dateFrom || filters?.dateTo) {
+          const dateFrom = filters.dateFrom ? new Date(filters.dateFrom) : new Date('1900-01-01');
+          const dateTo = filters.dateTo ? new Date(filters.dateTo) : new Date('2100-12-31');
+          
+          return thisYearBirth >= dateFrom && thisYearBirth <= dateTo;
+        }
+        
+        return true;
+      });
+    }
+
+    // Сортируем по дню и месяцу рождения (игнорируя год)
+    return filteredEmployees.sort((a, b) => {
+      const dateA = new Date(a.birthDate);
+      const dateB = new Date(b.birthDate);
+      
+      // Извлекаем только месяц и день
+      const monthDayA = dateA.getMonth() * 100 + dateA.getDate();
+      const monthDayB = dateB.getMonth() * 100 + dateB.getDate();
+      
+      return monthDayA - monthDayB;
     });
   }
 
