@@ -10,14 +10,16 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor(configService: ConfigService) {
-    const url =
-      configService.get<string>('DATABASE_URL') || 'file:/app/data/dev.db';
+    let url = configService.get<string>('DATABASE_URL');
+
+    if (!url) {
+      url = 'file:/app/data/dev.db';
+    }
 
     const dbPath = url.replace(/^file:/, '');
     const db = betterSqlite3(dbPath);
     const adapter = new PrismaBetterSqlite3(db);
 
-    // Обязательно передаём объект с adapter
     super({
       adapter,
     });
