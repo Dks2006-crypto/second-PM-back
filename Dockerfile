@@ -21,10 +21,12 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
-# Создаём пустую БД и применяем миграции при старте
+# Создаём директорию для БД
 RUN mkdir -p /app/data
+
+# Устанавливаем DATABASE_URL и применяем миграции
 ENV DATABASE_URL=file:/app/data/dev.db
-RUN npx prisma migrate deploy
+RUN npx prisma migrate deploy --schema ./prisma/schema.prisma
 
 EXPOSE 3000
 
