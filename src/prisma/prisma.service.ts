@@ -1,8 +1,8 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import betterSqlite3 from 'better-sqlite3';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
 @Injectable()
 export class PrismaService
@@ -10,10 +10,15 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor(configService: ConfigService) {
-    const url = configService.get<string>('DATABASE_URL') || 'file:./dev.db';
+    let url = configService.get<string>('DATABASE_URL');
 
-    // Создаём адаптер для better-sqlite3
-    const db = betterSqlite3(url.replace('file:', ''));
+    if (!url) {
+      throw new Error('DATABASE_URL is not defined in environment variables');
+    }
+
+    // Убираем 'file:' для better-sqlite3
+    const dbPath = url.replace(/^file:/, '');
+    const db = betterSqlite3(dbPath);
     const adapter = new PrismaBetterSqlite3(db);
 
     super({ adapter });
