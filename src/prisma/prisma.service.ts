@@ -13,10 +13,9 @@ export class PrismaService
     let url = configService.get<string>('DATABASE_URL');
 
     if (!url) {
-      throw new Error('DATABASE_URL is not defined in environment variables');
+      url = 'file:/app/data/dev.db';
     }
 
-    // Убираем 'file:' для better-sqlite3
     const dbPath = url.replace(/^file:/, '');
     const db = betterSqlite3(dbPath);
     const adapter = new PrismaBetterSqlite3(db);
