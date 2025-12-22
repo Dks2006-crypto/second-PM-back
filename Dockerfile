@@ -21,12 +21,10 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
-# Создаём директорию для БД
 RUN mkdir -p /app/data
 
-# Устанавливаем DATABASE_URL и синхронизируем схему
 ENV DATABASE_URL=file:/app/data/dev.db
-RUN npx prisma db push --schema ./prisma/schema.prisma --force-reset
+RUN npx prisma db push --force-reset
 
 EXPOSE 3000
 
