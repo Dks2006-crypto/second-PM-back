@@ -14,6 +14,8 @@ import { CardTemplatesModule } from './card-templates/card-templates.module';
 import { CardGeneratorService } from './card-generator/card-generator.service';
 import { CardGeneratorModule } from './card-generator/card-generator.module';
 import { MailingModule } from './mailing/mailing.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -25,6 +27,10 @@ import { MailingModule } from './mailing/mailing.module';
     CardTemplatesModule,
     CardGeneratorModule,
     MailingModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'public'),
+      serveRoot: '/',
+    }),
   ],
   controllers: [AppController],
   providers: [

@@ -2,6 +2,7 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -14,7 +15,6 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    // Исправленная строка:
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -25,13 +25,12 @@ export class RolesGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user; // user добавляется JwtStrategy
+    const user = request.user;
 
-    // Если user или role не определены — доступ запрещён
-    if (!user || !user.role) {
-      return false;
+    if (!user || !requiredRoles.includes(user.role)) {
+      throw new ForbiddenException('Доступ запрещён: требуется роль HR');
     }
 
-    return requiredRoles.includes(user.role);
+    return true;
   }
 }

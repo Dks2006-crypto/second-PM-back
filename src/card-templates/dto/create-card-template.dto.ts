@@ -4,8 +4,9 @@ export class CreateCardTemplateDto {
   @IsString()
   name: string;
 
-  @IsUrl()
-  backgroundImageUrl: string;
+  @IsOptional()
+  @IsUrl({}, { message: 'URL фонового изображения должен быть валидным' })
+  backgroundImageUrl?: string | null;
 
   @IsString()
   textTemplate: string; // Поддержка {name} для подстановки

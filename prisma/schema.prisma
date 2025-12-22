@@ -60,10 +60,15 @@ model Employee {
 }
 
 model BirthdayPreferences {
-  id           Int      @id @default(autoincrement())
-  employeeId   Int      @unique @map("employee_id")
-  employee     Employee @relation(fields: [employeeId], references: [id])
-  receiveEmail Boolean  @default(true) @map("receive_email")
+  id                        Int      @id @default(autoincrement())
+  employeeId                Int      @unique @map("employee_id")
+  employee                  Employee @relation(fields: [employeeId], references: [id])
+  receiveEmail              Boolean  @default(true) @map("receive_email")
+  receiveInApp              Boolean  @default(true) @map("receive_in_app")
+  reminderDaysBefore        Int      @default(7) @map("reminder_days_before")
+  sendTime                  String   @default("09:00") @map("send_time")
+  showBirthdayPublic        Boolean  @default(true) @map("show_birthday_public")
+  allowCardPersonalization  Boolean  @default(true) @map("allow_card_personalization")
 
   @@map("birthday_preferences")
 }
@@ -71,7 +76,7 @@ model BirthdayPreferences {
 model CardTemplate {
   id                 Int         @id @default(autoincrement())
   name               String
-  backgroundImageUrl String      @map("background_image_url")
+  backgroundImageUrl String?     @map("background_image_url")
   textTemplate       String      @map("text_template")
   fontSize           Int         @default(48) @map("font_size")
   fontColor          String      @default("#FFFFFF") @map("font_color")
@@ -88,9 +93,9 @@ model CardTemplate {
 model BirthdayCardHistory {
   id           Int          @id @default(autoincrement())
   employeeId   Int          @map("employee_id")
-  employee     Employee     @relation(fields: [employeeId], references: [id])
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   templateId   Int          @map("template_id")
-  template     CardTemplate @relation(fields: [templateId], references: [id])
+  template     CardTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   imageUrl     String       @map("image_url")
   sentAt       DateTime     @map("sent_at")
   success      Boolean

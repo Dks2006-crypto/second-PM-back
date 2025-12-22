@@ -52,6 +52,11 @@ export class CardTemplatesService {
   }
 
   async remove(id: number) {
+    // Сначала удаляем связанные записи в истории
+    await this.prisma.birthdayCardHistory.deleteMany({
+      where: { templateId: id },
+    });
+    
     return this.prisma.cardTemplate.delete({
       where: { id },
     });

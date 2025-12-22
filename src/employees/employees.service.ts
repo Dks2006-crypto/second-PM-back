@@ -2,10 +2,14 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { CreateUserEmployeeDto } from './dto/create-user-employee.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class EmployeesService {
@@ -83,13 +87,55 @@ export class EmployeesService {
 
   // Специальный метод для сотрудника — просмотр своих данных
   async findMyProfile(userId: number) {
-    const employee = await this.prisma.employee.findUnique({
+    let employee = await this.prisma.employee.findUnique({
       where: { userId },
       include: {
         department: true,
         position: true,
+        preferences: true,
+        BirthdayCardHistory: {
+          take: 5,
+          orderBy: { sentAt: 'desc' },
+          include: {
+            template: { select: { name: true } },
+          },
+        },
       },
     });
+
+    // Если профиль не существует, создаем базовый
+    if (!employee) {
+      // Получаем данные пользователя
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { role: true },
+      });
+
+      if (user) {
+        // Создаем базовый Employee профиль
+        employee = await this.prisma.employee.create({
+          data: {
+            firstName: 'Новый',
+            lastName: 'Сотрудник',
+            email: user.email,
+            birthDate: new Date('1990-01-01').toISOString(),
+            userId: userId,
+          },
+          include: {
+            department: true,
+            position: true,
+            preferences: true,
+            BirthdayCardHistory: {
+              take: 5,
+              orderBy: { sentAt: 'desc' },
+              include: {
+                template: { select: { name: true } },
+              },
+            },
+          },
+        });
+      }
+    }
 
     if (!employee) {
       throw new NotFoundException('Ваш профиль сотрудника не найден');
@@ -110,5 +156,240 @@ export class EmployeesService {
       },
       orderBy: { birthDate: 'asc' },
     });
+  }
+
+  // Обновление профиля сотрудника
+  async updateProfile(userId: number, dto: UpdateProfileDto) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId },
+      include: { user: true },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Профиль сотрудника не найден');
+    }
+
+    const updateData: Partial<{
+      firstName: string;
+      lastName: string;
+      photoUrl: string;
+      birthDate: string;
+    }> = {};
+
+    // Обновляем личные данные сотрудника
+    if (dto.firstName) updateData.firstName = dto.firstName;
+    if (dto.lastName) updateData.lastName = dto.lastName;
+    if (dto.photoUrl) updateData.photoUrl = dto.photoUrl;
+    if (dto.birthDate) {
+      const birthDate = new Date(dto.birthDate);
+      if (isNaN(birthDate.getTime())) {
+        throw new ForbiddenException('Некорректная дата рождения');
+      }
+      birthDate.setUTCHours(0, 0, 0, 0);
+      updateData.birthDate = birthDate.toISOString();
+    }
+
+    // Обновляем данные сотрудника
+    const updatedEmployee = await this.prisma.employee.update({
+      where: { id: employee.id },
+      data: updateData,
+      include: {
+        department: true,
+        position: true,
+        preferences: true,
+      },
+    });
+
+    // Обновляем настройки уведомлений
+    const preferencesUpdate: Partial<{
+      receiveEmail: boolean;
+      receiveInApp: boolean;
+      reminderDaysBefore: number;
+      sendTime: string;
+      showBirthdayPublic: boolean;
+      allowCardPersonalization: boolean;
+    }> = {};
+    
+    if (dto.receiveEmail !== undefined) preferencesUpdate.receiveEmail = dto.receiveEmail;
+    if (dto.receiveInApp !== undefined) preferencesUpdate.receiveInApp = dto.receiveInApp;
+    if (dto.reminderDaysBefore !== undefined) preferencesUpdate.reminderDaysBefore = dto.reminderDaysBefore;
+    if (dto.sendTime !== undefined) preferencesUpdate.sendTime = dto.sendTime;
+    if (dto.showBirthdayPublic !== undefined) preferencesUpdate.showBirthdayPublic = dto.showBirthdayPublic;
+    if (dto.allowCardPersonalization !== undefined) preferencesUpdate.allowCardPersonalization = dto.allowCardPersonalization;
+    
+    if (Object.keys(preferencesUpdate).length > 0) {
+      await this.prisma.birthdayPreferences.upsert({
+        where: { employeeId: employee.id },
+        update: preferencesUpdate,
+        create: {
+          employeeId: employee.id,
+          ...preferencesUpdate,
+        },
+      });
+    }
+
+    // Меняем пароль если указан
+    if (dto.currentPassword && dto.newPassword) {
+      if (!employee.user) {
+        throw new NotFoundException('Данные пользователя не найдены');
+      }
+
+      const isCurrentPasswordValid = await bcrypt.compare(
+        dto.currentPassword,
+        employee.user.password,
+      );
+
+      if (!isCurrentPasswordValid) {
+        throw new UnauthorizedException('Неверный текущий пароль');
+      }
+
+      const hashedNewPassword = await bcrypt.hash(dto.newPassword, 10);
+      await this.prisma.user.update({
+        where: { id: employee.user.id },
+        data: { password: hashedNewPassword },
+      });
+    }
+
+    return updatedEmployee;
+  }
+
+  // Получение настроек уведомлений
+  async getNotificationSettings(userId: number) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId },
+      include: { preferences: true },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Профиль сотрудника не найден');
+    }
+
+    return employee.preferences || { receiveEmail: true };
+  }
+
+  // Обновление только настроек уведомлений
+  async updateNotificationSettings(userId: number, receiveEmail: boolean) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Профиль сотрудника не найден');
+    }
+
+    return this.prisma.birthdayPreferences.upsert({
+      where: { employeeId: employee.id },
+      update: { receiveEmail },
+      create: {
+        employeeId: employee.id,
+        receiveEmail,
+      },
+    });
+  }
+
+  // Смена пароля
+  async updatePassword(
+    userId: number,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId },
+      include: { user: true },
+    });
+
+    if (!employee || !employee.user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      employee.user.password,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException('Неверный текущий пароль');
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: employee.user.id },
+      data: { password: hashedNewPassword },
+    });
+
+    return { message: 'Пароль успешно изменен' };
+  }
+
+  // Создание пользователя и сотрудника вместе
+  async createUserAndEmployee(dto: CreateUserEmployeeDto) {
+    // Проверяем, что пользователь с таким email не существует
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      throw new ForbiddenException('Пользователь с таким email уже существует');
+    }
+
+    // Проверяем роль
+    const role = await this.prisma.role.findUnique({
+      where: { name: dto.role },
+    });
+
+    if (!role) {
+      throw new ForbiddenException('Неверная роль');
+    }
+
+    // Проверяем дату рождения
+    const birthDate = new Date(dto.birthDate);
+    if (isNaN(birthDate.getTime())) {
+      throw new ForbiddenException('Некорректная дата рождения');
+    }
+    birthDate.setUTCHours(0, 0, 0, 0);
+
+    // Создаем пользователя
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        password: hashedPassword,
+        roleId: role.id,
+      },
+      include: { role: true },
+    });
+
+    // Создаем сотрудника
+    const employee = await this.prisma.employee.create({
+      data: {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        birthDate: birthDate.toISOString(),
+        photoUrl: dto.photoUrl,
+        departmentId: dto.departmentId,
+        positionId: dto.positionId,
+        userId: user.id,
+      },
+      include: {
+        department: true,
+        position: true,
+      },
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role.name,
+      },
+      employee: {
+        id: employee.id,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        department: employee.department,
+        position: employee.position,
+      },
+    };
   }
 }

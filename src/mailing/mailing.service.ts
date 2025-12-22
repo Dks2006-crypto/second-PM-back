@@ -93,25 +93,45 @@ export class MailingService {
     let templateIdForHistory = 0;
 
     try {
+      // Получаем все подходящие шаблоны
+      let availableTemplates: CardTemplate[] = [];
+      
       if (employee.departmentId) {
-        template = await this.prisma.cardTemplate.findFirst({
+        const departmentTemplates = await this.prisma.cardTemplate.findMany({
           where: { departmentId: employee.departmentId },
         });
+        availableTemplates.push(...departmentTemplates);
       }
 
-      if (!template && employee.positionId) {
-        template = await this.prisma.cardTemplate.findFirst({
+      if (employee.positionId) {
+        const positionTemplates = await this.prisma.cardTemplate.findMany({
           where: { positionId: employee.positionId },
+        });
+        availableTemplates.push(...positionTemplates);
+      }
+
+      // Если нет специализированных шаблонов, берем все общие
+      if (availableTemplates.length === 0) {
+        availableTemplates = await this.prisma.cardTemplate.findMany({
+          where: {
+            departmentId: null,
+            positionId: null,
+          },
         });
       }
 
-      if (!template) {
-        template = await this.prisma.cardTemplate.findFirst();
+      // Если все еще нет шаблонов, берем любые
+      if (availableTemplates.length === 0) {
+        availableTemplates = await this.prisma.cardTemplate.findMany();
       }
 
-      if (!template) {
+      if (availableTemplates.length === 0) {
         throw new Error('Нет доступных шаблонов открыток');
       }
+
+      // Выбираем случайный шаблон из доступных
+      const randomIndex = Math.floor(Math.random() * availableTemplates.length);
+      template = availableTemplates[randomIndex];
 
       templateIdForHistory = template.id;
 
@@ -119,11 +139,13 @@ export class MailingService {
       const imageUrl = await this.cardGenerator.generateCard(
         template,
         fullName,
+        employee.photoUrl || undefined,
+        true, // включаем фото сотрудника
       );
 
       const publicUrl = `http://localhost:3000${imageUrl}`;
 
-      this.logger.log(`Отправка письма на ${employee.email} от ${fromEmail}`);
+      this.logger.log(`Отправка письма на ${employee.email} от ${fromEmail} с шаблоном "${template.name}"`);
 
       await transporter.sendMail({
         from: fromEmail,
@@ -146,7 +168,7 @@ export class MailingService {
         },
       });
 
-      this.logger.log(`Открытка успешно отправлена: ${employee.email}`);
+      this.logger.log(`Открытка успешно отправлена: ${employee.email} (шаблон: ${template.name})`);
     } catch (error: any) {
       this.logger.error(`Ошибка отправки ${employee.email}: ${error.message}`);
 

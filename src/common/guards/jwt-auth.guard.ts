@@ -8,7 +8,6 @@ import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../public.decorator';
 
 @Injectable()
-// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(private reflector: Reflector) {
     super();
@@ -25,9 +24,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return super.canActivate(context);
   }
 
-  handleRequest(err, user) {
+  handleRequest(err, user, info) {
     if (err || !user) {
-      throw err || new UnauthorizedException();
+      throw err || new UnauthorizedException(info?.message || 'Invalid token');
     }
     return user;
   }
