@@ -24,9 +24,9 @@ COPY --from=builder /app/prisma ./prisma
 # Создаём директорию для БД
 RUN mkdir -p /app/data
 
-# Устанавливаем DATABASE_URL и применяем миграции
+# Устанавливаем DATABASE_URL и применяем миграции с --url
 ENV DATABASE_URL=file:/app/data/dev.db
-RUN npx prisma migrate deploy --schema ./prisma/schema.prisma
+RUN npx prisma migrate deploy --schema ./prisma/schema.prisma --url $DATABASE_URL
 
 EXPOSE 3000
 
