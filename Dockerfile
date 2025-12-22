@@ -24,7 +24,7 @@ COPY --from=builder /app/prisma ./prisma
 RUN mkdir -p /app/data
 
 ENV DATABASE_URL=file:/app/data/dev.db
-RUN npx prisma db push --force-reset
+RUN npx prisma db push --url $DATABASE_URL --force-reset
 
 EXPOSE 3000
 
