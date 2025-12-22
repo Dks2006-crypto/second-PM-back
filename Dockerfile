@@ -28,10 +28,13 @@ COPY --from=builder /app/prisma ./prisma
 RUN mkdir -p /app/data
 
 # Создаем .env файл для миграций
-RUN echo "DATABASE_URL=$DATABASE_URL" > .env
+RUN echo "DATABASE_URL=$DATABASE_URL" > .env && cat .env
 
-# Применяем миграции с URL напрямую
-RUN npx prisma migrate deploy --url $DATABASE_URL
+# Проверяем содержимое schema.prisma
+RUN cat prisma/schema.prisma | grep -A2 "datasource db"
+
+# Применяем миграции (url читается из schema.prisma)
+RUN npx prisma migrate deploy
 
 EXPOSE 3000
 
