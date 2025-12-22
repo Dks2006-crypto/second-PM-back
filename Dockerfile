@@ -2,25 +2,31 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Установка зависимостей
 COPY package*.json ./
 RUN npm ci
 
-COPY prisma ./prisma/
+# Генерация Prisma client
+COPY prisma ./prisma
 RUN npx prisma generate
 
+# Копирование исходников
 COPY . .
-RUN npm run build  # Создаёт dist/main.js
+
+# Билд NestJS
+RUN npm run build
 
 # Stage 2: Production
 FROM node:20-alpine
 WORKDIR /app
 
-# Копируем dist, node_modules, package.json и public
+# Копируем только необходимое
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/public ./public  # Для открыток
 
+# Prisma client уже в node_modules
 EXPOSE 3000
 
-CMD ["node", "dist/main.js"]  # Точно dist/main.js
+CMD ["node", "dist/main.js"]
