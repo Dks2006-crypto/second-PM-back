@@ -14,15 +14,18 @@ RUN npm run build
 # Stage 2: Production
 FROM node:20-alpine
 WORKDIR /app
-RUN mkdir -p /app/data && touch /app/data/dev.db
 
-# Копируем dist полностью (включая src)
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
+
+# Создаём пустую БД и применяем миграции при старте
+RUN mkdir -p /app/data
+ENV DATABASE_URL=file:/app/data/dev.db
+RUN npx prisma migrate deploy
 
 EXPOSE 3000
 
-# Запуск main.js внутри dist/src
 CMD ["node", "dist/src/main.js"]
