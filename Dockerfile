@@ -21,10 +21,14 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
+# Создаем директорию для базы данных
 RUN mkdir -p /app/data
 
+# Устанавливаем переменную окружения для production
 ENV DATABASE_URL=file:/app/data/dev.db
-RUN npx prisma db push --url $DATABASE_URL --force-reset
+
+# Применяем миграции (без --force-reset для сохранения данных)
+RUN npx prisma migrate deploy
 
 EXPOSE 3000
 
