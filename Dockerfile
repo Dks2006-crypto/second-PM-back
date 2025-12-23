@@ -23,6 +23,49 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+
+# Устанавливаем зависимости для prisma
+RUN npm install --production
+
+# Устанавливаем prisma CLI
+RUN npm install -g prisma
+
+# Устанавливаем адаптер для SQLite
+RUN npm install @prisma/adapter-better-sqlite3
+
+# Устанавливаем better-sqlite3
+RUN npm install better-sqlite3
+
+# Устанавливаем canvas
+RUN npm install @napi-rs/canvas
+
+# Устанавливаем sharp
+RUN npm install sharp
+
+# Устанавливаем nodemailer
+RUN npm install nodemailer
+
+# Устанавливаем bullmq
+RUN npm install bullmq
+
+# Устанавливаем ioredis
+RUN npm install ioredis
+
+# Устанавливаем multer
+RUN npm install multer
+
+# Устанавливаем bcrypt
+RUN npm install bcrypt
+
+# Устанавливаем class-validator и class-transformer
+RUN npm install class-validator class-transformer
+
+# Устанавливаем passport-jwt
+RUN npm install passport-jwt
+
+# Устанавливаем reflect-metadata
+RUN npm install reflect-metadata
 
 # Создаем директорию для базы данных
 RUN mkdir -p /app/data
