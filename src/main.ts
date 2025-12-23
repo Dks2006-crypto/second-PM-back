@@ -14,7 +14,7 @@ async function bootstrap() {
     prefix: '/cards/',
   });
 
-  // CORS для фронтенда - ВАЖНО: добавьте ВСЕ домены Vercel
+  // CORS для фронтенда
   app.enableCors({
     origin: [
       'http://localhost:3001',
@@ -33,7 +33,7 @@ async function bootstrap() {
   await authService.seedRoles();
 
   const port = process.env.PORT || 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0'); // ДОБАВЛЕНО: '0.0.0.0'
   console.log(`Application is running on port ${port}`);
 }
 bootstrap();
