@@ -18,7 +18,6 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/prisma ./prisma
 
 # Создаем необходимые директории
 RUN mkdir -p /app/data
@@ -27,13 +26,13 @@ RUN mkdir -p /app/public/cards
 RUN mkdir -p /app/public/photos
 RUN mkdir -p /app/public/templates
 
-# Копируем public если есть
-COPY --from=builder /app/public ./public 2>/dev/null || true
+# Копируем prisma
+COPY --from=builder /app/prisma ./prisma
 
 # Генерируем Prisma Client в production образе
 RUN npx prisma generate
 
 EXPOSE 3000
 
-# Запускаем приложение напрямую
+# Запускаем приложение
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
