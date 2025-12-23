@@ -1,4 +1,4 @@
-import { Controller, Post, HttpCode } from '@nestjs/common';
+import { Controller, Get, HttpCode } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 
@@ -6,7 +6,7 @@ import * as bcrypt from 'bcrypt';
 export class SeedController {
   constructor(private prisma: PrismaService) {}
 
-  @Post('init')
+  @Get('init')
   @HttpCode(200)
   async seedDatabase() {
     try {
