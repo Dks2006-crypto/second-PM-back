@@ -3,10 +3,10 @@ set -e
 
 echo "Starting application..."
 
-# Запускаем миграции
+# Применяем миграции
 echo "Running database migrations..."
 npx prisma migrate deploy
 
 # Запускаем приложение
-echo "Starting application server..."
-node dist/src/main.js
+echo "Starting NestJS application..."
+exec node dist/main
