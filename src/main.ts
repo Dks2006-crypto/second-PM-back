@@ -9,18 +9,19 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  // Настройка статических файлов ДО listen
+  // Настройка статических файлов
   app.useStaticAssets(join(__dirname, '..', 'public'), {
     prefix: '/cards/',
   });
 
-  // CORS для фронтенда
+  // CORS для фронтенда - ВАЖНО: добавьте ВСЕ домены Vercel
   app.enableCors({
     origin: [
       'http://localhost:3001',
       'http://localhost:3000',
+      'https://second-pmm-front.vercel.app',
       'https://second-pmm-front-17k9wc2l3-dks2006-cryptos-projects.vercel.app',
-      /\.vercel\.app$/,
+      /\.vercel\.app$/, // Разрешить все поддомены Vercel
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
