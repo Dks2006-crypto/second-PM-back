@@ -31,42 +31,6 @@ RUN npm install --production
 # Устанавливаем prisma CLI
 RUN npm install -g prisma
 
-# Устанавливаем адаптер для SQLite
-RUN npm install @prisma/adapter-better-sqlite3
-
-# Устанавливаем better-sqlite3
-RUN npm install better-sqlite3
-
-# Устанавливаем canvas
-RUN npm install @napi-rs/canvas
-
-# Устанавливаем sharp
-RUN npm install sharp
-
-# Устанавливаем nodemailer
-RUN npm install nodemailer
-
-# Устанавливаем bullmq
-RUN npm install bullmq
-
-# Устанавливаем ioredis
-RUN npm install ioredis
-
-# Устанавливаем multer
-RUN npm install multer
-
-# Устанавливаем bcrypt
-RUN npm install bcrypt
-
-# Устанавливаем class-validator и class-transformer
-RUN npm install class-validator class-transformer
-
-# Устанавливаем passport-jwt
-RUN npm install passport-jwt
-
-# Устанавливаем reflect-metadata
-RUN npm install reflect-metadata
-
 # Создаем директорию для базы данных
 RUN mkdir -p /app/data
 
@@ -77,9 +41,11 @@ RUN echo "DATABASE_URL=$DATABASE_URL" > .env
 RUN cat .env
 RUN cat prisma.config.ts
 
-# Применяем миграции (url читается из prisma.config.ts)
-RUN DATABASE_URL=$DATABASE_URL npx prisma migrate deploy
+# Копируем скрипт запуска
+COPY start.sh .
+RUN chmod +x start.sh
 
 EXPOSE 3000
 
-CMD ["node", "dist/src/main.js"]
+# Запускаем скрипт
+CMD ["./start.sh"]
