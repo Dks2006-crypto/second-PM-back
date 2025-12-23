@@ -17,6 +17,7 @@ import { CardGeneratorModule } from './card-generator/card-generator.module';
 import { MailingModule } from './mailing/mailing.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { SeedController } from './seed/seed.controller';
 
 @Module({
   imports: [
@@ -37,7 +38,7 @@ import { join } from 'path';
       serveRoot: '/',
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, SeedController],
   providers: [
     AppService,
     PrismaService,
