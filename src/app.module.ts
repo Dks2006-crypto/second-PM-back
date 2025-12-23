@@ -18,6 +18,7 @@ import { MailingModule } from './mailing/mailing.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { SeedController } from './seed/seed.controller';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { SeedController } from './seed/seed.controller';
     DepartmentsModule,
     PositionsModule,
     CardTemplatesModule,
+    SeedModule,
     CardGeneratorModule,
     MailingModule,
     ServeStaticModule.forRoot({
