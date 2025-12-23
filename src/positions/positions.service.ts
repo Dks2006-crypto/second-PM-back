@@ -8,11 +8,31 @@ export class PositionsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreatePositionDto) {
-    return this.prisma.position.create({
+    const position = await this.prisma.position.create({
       data: {
         name: dto.name,
       },
     });
+
+    // Если указан departmentId, создаем связь через CardTemplate
+    if (dto.departmentId) {
+      try {
+        // Создаем базовый шаблон карты для установки связи
+        await this.prisma.cardTemplate.create({
+          data: {
+            name: `Связь для ${position.name}`,
+            textTemplate: 'Связь должности с отделом',
+            positionId: position.id,
+            departmentId: dto.departmentId,
+          },
+        });
+      } catch (error) {
+        // Если не удалось создать шаблон, продолжаем без связи
+        console.warn('Не удалось установить связь с отделом:', error);
+      }
+    }
+
+    return position;
   }
 
   async findAll() {
@@ -22,7 +42,7 @@ export class PositionsService {
   async findAllWithDepartments() {
     return this.prisma.position.findMany({
       include: {
-        employees: {
+        CardTemplate: {
           select: {
             id: true,
             departmentId: true,
