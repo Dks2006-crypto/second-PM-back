@@ -29,6 +29,11 @@ export class PositionsController {
     return this.positionsService.findAll();
   }
 
+  @Get('with-departments')
+  findAllWithDepartments() {
+    return this.positionsService.findAllWithDepartments();
+  }
+
   @Get(':id')
   findOne(@Param('id', new ParseIntIdPipe()) id: number) {
     return this.positionsService.findOne(id);

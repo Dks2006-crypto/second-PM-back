@@ -19,6 +19,25 @@ export class PositionsService {
     return this.prisma.position.findMany();
   }
 
+  async findAllWithDepartments() {
+    return this.prisma.position.findMany({
+      include: {
+        employees: {
+          select: {
+            id: true,
+            departmentId: true,
+            department: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   async findOne(id: number) {
     const position = await this.prisma.position.findUnique({
       where: { id },
