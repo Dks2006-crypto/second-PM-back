@@ -9,18 +9,30 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
+  // Настройка статических файлов ДО listen
+  app.useStaticAssets(join(__dirname, '..', 'public'), {
+    prefix: '/cards/',
+  });
+
+  // CORS для фронтенда
   app.enableCors({
-    origin: 'http://localhost:3001',
+    origin: [
+      'http://localhost:3001',
+      'http://localhost:3000',
+      'https://second-pmm-front-17k9wc2l3-dks2006-cryptos-projects.vercel.app',
+      /\.vercel\.app$/,
+    ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   // Инициализация ролей
   const authService = app.get(AuthService);
   await authService.seedRoles();
 
-  await app.listen(3000);
-  app.useStaticAssets(join(__dirname, '..', 'public'), {
-    prefix: '/cards/',
-  });
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  console.log(`Application is running on port ${port}`);
 }
 bootstrap();
