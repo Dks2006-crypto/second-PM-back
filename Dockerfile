@@ -34,5 +34,5 @@ RUN npx prisma generate
 
 EXPOSE 3000
 
-# Запускаем через npm скрипт
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && npm run start:prod"]
+# Запускаем БЕЗ seed (seed будем вызывать вручную)
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
