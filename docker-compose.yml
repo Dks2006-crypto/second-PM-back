@@ -7,6 +7,19 @@ services:
       - "3000:3000"
     environment:
       - DATABASE_URL=file:/app/data/dev.db
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+      - PORT=3000
+      - MAIL_HOST=smtp.gmail.com
+      - MAIL_PORT=587
+      - MAIL_SECURE=false
+      - JWT_SECRET=your-secret-key
+      - BCRYPT_SALT_ROUNDS=10
+      - CORS_ORIGIN=http://localhost:3000
+      - UPLOAD_PATH=/app/public
+      - BACKGROUND_PATH=/app/public/backgrounds
+      - CARD_PATH=/app/public/cards
+      - PHOTO_PATH=/app/public/photos
     volumes:
       - ./data:/app/data
     restart: unless-stopped

@@ -8,14 +8,20 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor(configService: ConfigService) {
-    super();
-
     const url =
       configService.get<string>('DATABASE_URL') ||
       process.env.DATABASE_URL ||
       'file:./dev.db';
 
     console.log('Using DATABASE_URL:', url);
+
+    super({
+      datasources: {
+        db: {
+          url: url,
+        },
+      },
+    });
   }
 
   async onModuleInit() {
