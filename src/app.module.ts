@@ -32,7 +32,6 @@ import { SeedModule } from './seed/seed.module';
     DepartmentsModule,
     PositionsModule,
     CardTemplatesModule,
-    SeedModule,
     CardGeneratorModule,
     MailingModule,
     ServeStaticModule.forRoot({
@@ -44,14 +43,14 @@ import { SeedModule } from './seed/seed.module';
   providers: [
     AppService,
     PrismaService,
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: JwtAuthGuard,
-    // },
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: RolesGuard,
-    // },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
     CardGeneratorService,
   ],
 })
