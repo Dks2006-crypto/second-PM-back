@@ -1,8 +1,10 @@
 import { Controller, Get, HttpCode } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Public } from '../common/public.decorator';
 import * as bcrypt from 'bcrypt';
 
 @Controller('seed')
+@Public() // Добавьте декоратор на весь контроллер
 export class SeedController {
   constructor(private prisma: PrismaService) {}
 
